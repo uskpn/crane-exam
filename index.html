@@ -337,6 +337,14 @@
   }
   ::selection{background:var(--hazard);color:var(--ink);}
 </style>
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5TX58QYEF1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-5TX58QYEF1');
+</script>
 </head>
 <body>
 <div id="app"></div>
@@ -1716,6 +1724,14 @@ async function saveStats(){
   catch(e){ /* best effort */ }
 }
 
+/* ---- Analytics (GA4 custom events) ----
+   No-ops safely if gtag isn't loaded (ad blockers, offline, etc.) */
+function trackEvent(name, params){
+  try{
+    if(typeof gtag === 'function') gtag('event', name, params || {});
+  }catch(e){ /* never let analytics break the app */ }
+}
+
 
 function shuffle(arr){
   const a = arr.slice();
@@ -1763,6 +1779,7 @@ function openLicense(licenseId){
   state.screen = 'license';
   state.confirmReset = false;
   state.showExempt = false;
+  trackEvent('select_license', {license_id: licenseId, license_name: lic.short});
   render();
 }
 
@@ -1793,6 +1810,13 @@ function startSubjectQuiz(subjectId, mode){
   state.currentMode = (subj.themes && subj.themes.length && mode !== 'all') ? 'test' : 'all';
   state.confirmReset = false;
   state.screen = 'quiz';
+  trackEvent('start_test', {
+    license_id: licId,
+    subject_id: subjectId,
+    subject_name: subj.name,
+    mode: state.currentMode,
+    question_count: qs.length
+  });
   render();
 }
 
@@ -1812,6 +1836,7 @@ function startReviewQuiz(){
   state.currentMode = null;
   state.confirmReset = false;
   state.screen = 'quiz';
+  trackEvent('start_review', {license_id: licId, missed_count: qs.length});
   render();
 }
 
@@ -1845,6 +1870,14 @@ function nextQuestion(){
     state.chosenIndex = null;
   } else {
     state.screen = 'result';
+    trackEvent('complete_test', {
+      license_id: state.currentLicense,
+      subject_id: state.currentSubject,
+      mode: state.isReviewSession ? 'review' : state.currentMode,
+      is_review: state.isReviewSession,
+      score: state.sessionCorrect,
+      total: state.currentQueue.length
+    });
   }
   render();
 }
